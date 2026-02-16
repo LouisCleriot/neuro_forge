@@ -47,3 +47,29 @@ class SelfAttentionTextBook(nn.Module):
         attention_weight = F.softmax(scores, dim=-1)
         output = torch.matmul(attention_weight, v)
         return output
+
+class SelfAttentionOptimized(nn.Module):
+    def __init__(self, embeding_size: int, attention_size: int, initialisation: Literal["xavier", "glorot", "he"]="xavier") -> None :
+        super().__init__()
+        self.w_qkv = nn.Linear(in_feature = embeding_size, out_feature = 3*attention_size, bias=False)
+
+        if initialisation=="xavier":
+            nn.init.xavier_normal_(self.w_qkv.weight)
+        elif initialisation=="glorot":
+            nn.init.xavier_uniform_(self.w_qkv.weight)
+        elif initialisation=="he":
+            nn.init.kaiming_normal_(self.w_qkv.weight)
+        else:
+            logger.error(f"Initialisation {initialisation} not supported. Please choose between 'xavier','glorot' and 'random'.")
+            raise ValueError("Initialisation not supported. Please choose between 'xavier','glorot' and 'random'.")
+
+    def forward(self, x: torch.tensor,mask:torch.tensor= None):
+        # (batch, len, embedding size)
+        x = self.w_qkv(x)
+        q,k,v = x.chunk(3)
+        
+        scores = torch.matmul(q,k.transpose(1,2))
+        if mask:
+            scores = scores.masked_fill(mask == 0, float("-inf"))
+        scores = F.softmax(scores)
+        return torch.matmul(scores, v)
