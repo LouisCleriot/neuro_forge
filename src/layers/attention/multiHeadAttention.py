@@ -26,7 +26,7 @@ class MultiHeadAttention(nn.Module):
             raise ValueError("Initialisation not supported. Please choose between 'xavier','glorot' and 'random'.")
 
 
-    def forward(self, x: torch.tensor, mask: torch.tensor = None, use_cache: bool = True):
+    def forward(self, x: torch.tensor, mask: torch.tensor = None, use_cache: bool = True, use_rope: bool = True):
         # (batch, len, emb size)
         qkv = self.w_qkv_h(x)
         q,k,v = rearrange(qkv, "b l (three h d) -> three b h l d", three=3, h=self.n_heads)
